@@ -432,7 +432,7 @@ function App() {
     <div className="min-h-screen bg-gray-100 w-full flex flex-col">
       {/* Header */}
       <header className="flex items-center bg-gray-900 text-white p-4">
-        <span className="text-3xl font-extrabold tracking-wide">CryptoSignal</span>
+        <span className="text-3xl font-extrabold tracking-wide">AI Powered Crypto Analysis Platform</span>
       </header>
 
       {/* Main Content */}
