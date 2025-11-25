@@ -74,6 +74,8 @@ function App() {
   const [newsError, setNewsError] = useState<string | null>(null); // New state for news error
   const [displayedAiSummary, setDisplayedAiSummary] = useState<string>(''); // Displayed text for typewriter effect
   const [visibleCharacters, setVisibleCharacters] = useState<number>(0); // Number of characters currently visible
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768); // Detect mobile screen size
+  const [showAllNews, setShowAllNews] = useState<boolean>(false); // State for showing all news on mobile
 
   // Helper function to strip markdown from text
   const stripMarkdown = (text: string): string => {
@@ -95,7 +97,7 @@ function App() {
     setVisibleCharacters(0); // Her yeni özet geldiğinde karakter sayısını sıfırla
 
     const typingSpeed = 30; // Milliseconds per character
-    let intervalId: NodeJS.Timeout;
+    let intervalId: number;
 
     intervalId = setInterval(() => {
       setVisibleCharacters(prevCount => {
@@ -123,10 +125,11 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      // This effect handles resize logic for isMobile
-      // No direct changes needed here for the current problem
+      setIsMobile(window.innerWidth < 768);
     };
-    // For now, let's assume it was removed during rollback and re-add if needed.
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -527,20 +530,22 @@ function App() {
               <LoadingDot/>{/* Artık sadece yüklenirken değil, sürekli görünür. */}
             </span>}
           </div>
-          <h2 className="text-lg font-semibold mb-4">Latest News</h2>
-          <ul className="space-y-3">
+          <h2 className="text-lg font-semibold mb-4 hidden md:block">Latest News</h2>
+          <ul className="space-y-3 hidden md:block">
             {newsLoading ? (
               <li><div className="text-gray-500">Loading news... <LoadingDot /></div></li>
             ) : newsError ? (
               <li><div className="text-red-600">{newsError}</div></li>
             ) : news.length > 0 ? (
-              news.map((item: NewsItem, idx: number) => (
-                <li key={idx} className="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-200">
-                  <a href={item.url} className="text-blue-600 block" target="_blank" rel="noopener noreferrer">
-                    {truncateText(item.title, 60)}
-                  </a>
-                </li>
-              ))
+              <>
+                {news.map((item: NewsItem, idx: number) => (
+                  <li key={idx} className="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-200">
+                    <a href={item.url} className="text-blue-600 block" target="_blank" rel="noopener noreferrer">
+                      {truncateText(item.title, 60)}
+                    </a>
+                  </li>
+                ))}
+              </>
             ) : (
               <li><div className="text-gray-500">No news found for {selected}.</div></li>
             )}
@@ -650,6 +655,40 @@ function App() {
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              {/* Latest News - Mobile Only */}
+              <div className="w-full bg-white rounded-lg shadow p-6 md:hidden">
+                <h2 className="text-xl font-semibold mb-4">Latest News</h2>
+                <ul className="space-y-3">
+                  {newsLoading ? (
+                    <li><div className="text-gray-500">Loading news... <LoadingDot /></div></li>
+                  ) : newsError ? (
+                    <li><div className="text-red-600">{newsError}</div></li>
+                  ) : news.length > 0 ? (
+                    <>
+                      {(isMobile && !showAllNews ? news.slice(0, 1) : news).map((item: NewsItem, idx: number) => (
+                        <li key={idx} className="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-200">
+                          <a href={item.url} className="text-blue-600 block" target="_blank" rel="noopener noreferrer">
+                            {truncateText(item.title, 60)}
+                          </a>
+                        </li>
+                      ))}
+                      {isMobile && news.length > 1 && (
+                        <li className="mt-2">
+                          <button
+                            onClick={() => setShowAllNews(!showAllNews)}
+                            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                          >
+                            {showAllNews ? 'Show Less' : 'Show More'}
+                          </button>
+                        </li>
+                      )}
+                    </>
+                  ) : (
+                    <li><div className="text-gray-500">No news found for {selected}.</div></li>
+                  )}
+                </ul>
               </div>
             </div>
 
