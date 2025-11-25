@@ -53,6 +53,7 @@ interface ChartData {
     label: string;
     data: number[];
     borderColor: string;
+    backgroundColor?: string;
     tension: number;
     fill: boolean;
   }[];
@@ -223,9 +224,10 @@ function App() {
             datasets: [{
               label: `${selected} Price (USD)`, // Use selected directly
               data: prices,
-              borderColor: 'rgb(75, 192, 192)',
+              borderColor: 'rgb(59, 130, 246)', // blue-500
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
               tension: 0.1,
-              fill: false,
+              fill: true,
             }],
           });
 
@@ -348,6 +350,14 @@ function App() {
   // Yanıp sönen nokta animasyonu için Tailwind CSS uyumlu bir bileşen
   const LoadingDot = () => (
     <span className="inline-block w-2 h-2 ml-2 bg-blue-500 rounded-full animate-pulse duration-100">
+    </span>
+  );
+
+  // Canlı veri göstergesi
+  const LiveIndicator = () => (
+    <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+      <span className="w-1.5 h-1.5 mr-1 bg-red-500 rounded-full animate-pulse"></span>
+      LIVE
     </span>
   );
 
@@ -496,23 +506,23 @@ function App() {
   const currentCoin = coins.find((c) => c.symbol === selected);
 
   return (
-    <div className="min-h-screen bg-gray-100 w-full flex flex-col">
+    <div className="min-h-screen bg-zinc-950 w-full flex flex-col">
       {/* Header */}
-      <header className="flex items-center bg-gray-900 text-white p-4">
-        <span className="text-3xl font-extrabold tracking-wide">AI Powered Crypto Analysis Platform</span>
+      <header className="flex items-center bg-zinc-900 text-white p-4 shadow-lg border-b border-zinc-800">
+        <span className="text-3xl font-bold tracking-wide text-gray-100">AI Powered Crypto Analysis Platform</span>
       </header>
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col md:flex-row w-full">
         {/* Left: News & Selector */}
-        <aside className="md:w-1/5 w-full bg-white p-6 border-r border-gray-200 shadow-md rounded-lg">
+        <aside className="md:w-1/5 w-full bg-zinc-900 p-6 border-r border-zinc-800 shadow-lg">
           <div className="mb-6">
-            <label htmlFor="coin-select" className="text-lg font-semibold mb-4">Select Coin</label>
+            <label htmlFor="coin-select" className="text-lg font-semibold mb-4 text-gray-200">Select Coin</label>
             <select
               id="coin-select"
               value={selected}
               onChange={handleSelectChange}
-              className="w-full p-2 border border-gray-300 rounded"
+              className="w-full p-2 border border-zinc-700 rounded bg-zinc-800 text-gray-100 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/50 transition-all"
             >
               {coins.map((coin) => (
                 <option key={coin.id} value={coin.symbol}>{coin.name} ({coin.symbol})</option>
@@ -521,33 +531,33 @@ function App() {
           </div>
           <div className="mb-4">
             {currentCoin && (
-              <span className="text-lg font-bold flex items-center">
+              <span className="text-lg font-bold flex items-center text-gray-200">
                 {currentCoin.name} ({currentCoin.symbol})
               </span>
             )}
-            {currentCoin?.currentPrice && <span className={`ml-2 text-xl font-bold ${currentCoin.currentPrice > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {currentCoin?.currentPrice && <span className={`ml-2 text-xl font-bold ${currentCoin.currentPrice > 0 ? 'text-green-500' : 'text-red-500'}`}>
               ${currentCoin.currentPrice.toFixed(2)}
               <LoadingDot/>{/* Artık sadece yüklenirken değil, sürekli görünür. */}
             </span>}
           </div>
-          <h2 className="text-lg font-semibold mb-4 hidden md:block">Latest News</h2>
+          <h2 className="text-lg font-semibold mb-4 hidden md:block text-gray-200">Latest News</h2>
           <ul className="space-y-3 hidden md:block">
             {newsLoading ? (
-              <li><div className="text-gray-500">Loading news... <LoadingDot /></div></li>
+              <li><div className="text-gray-400">Loading news... <LoadingDot /></div></li>
             ) : newsError ? (
-              <li><div className="text-red-600">{newsError}</div></li>
+              <li><div className="text-red-500">{newsError}</div></li>
             ) : news.length > 0 ? (
               <>
                 {news.map((item: NewsItem, idx: number) => (
-                  <li key={idx} className="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-200">
-                    <a href={item.url} className="text-blue-600 block" target="_blank" rel="noopener noreferrer">
+                  <li key={idx} className="bg-zinc-800 p-3 rounded border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all duration-200">
+                    <a href={item.url} className="text-blue-400 hover:text-blue-300 block transition-colors" target="_blank" rel="noopener noreferrer">
                       {truncateText(item.title, 60)}
                     </a>
                   </li>
                 ))}
               </>
             ) : (
-              <li><div className="text-gray-500">No news found for {selected}.</div></li>
+              <li><div className="text-gray-400">No news found for {selected}.</div></li>
             )}
           </ul>
         </aside>
@@ -558,118 +568,172 @@ function App() {
             {/* Sol Kısım: Chart, Indicators ve Market Data */} 
             <div className="lg:col-span-2 flex flex-col gap-6">
               {/* Price Chart */}
-              <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-4">{selected}/USDT Price Chart</h2>
+              <div className="bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-6 flex flex-col items-center">
+                <h2 className="text-xl font-semibold mb-4 text-gray-200">{selected}/USDT Price Chart</h2>
                 {chartLoading ? (
-                  <div className="w-full h-64 flex items-center justify-center text-gray-500">Loading chart...</div>
+                  <div className="w-full h-64 flex items-center justify-center text-gray-400">Loading chart...</div>
                 ) : chartError ? (
-                  <div className="w-full h-64 flex items-center justify-center text-red-600">Chart Error: {chartError}</div>
+                  <div className="w-full h-64 flex items-center justify-center text-red-500">Chart Error: {chartError}</div>
                 ) : chartData ? (
                   <div className="w-full h-64">
                     <Line data={chartData} options={{ maintainAspectRatio: false }} />
                   </div>
                 ) : (
-                  <div className="w-full h-64 bg-gray-200 rounded flex items-center justify-center text-gray-500">
+                  <div className="w-full h-64 bg-zinc-800 rounded flex items-center justify-center text-gray-400">
                     Chart data not found.
                   </div>
                 )}
               </div>
 
               {/* Indicators Table */}
-              <div className="w-full bg-white rounded-lg shadow overflow-hidden">
-                <h2 className="text-xl font-semibold mb-4 p-6">Technical Indicators</h2>
+              <div className="w-full bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 overflow-hidden">
+                <div className="flex items-center justify-between p-6">
+                  <h2 className="text-xl font-semibold text-gray-200">Technical Indicators</h2>
+                  <LiveIndicator />
+                </div>
                 <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="py-3 px-4 text-left font-semibold">Indicator</th>
-                      <th className="py-3 px-4 text-right font-semibold">Value</th>
+                    <tr className="bg-zinc-800">
+                      <th className="py-3 px-4 text-left font-semibold text-gray-300">Indicator</th>
+                      <th className="py-3 px-4 text-right font-semibold text-gray-300">Value</th>
                     </tr>
                   </thead>
                   <tbody>
                     {/* RSI */} 
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">RSI (14)</td>
-                      <td className={`py-3 px-4 text-right`}>{typeof indicators.rsi === 'number' ? indicators.rsi.toFixed(2) : 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">RSI (14)</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {typeof indicators.rsi === 'number' ? indicators.rsi.toFixed(2) : 'N/A'}
+                        </span>
+                      </td>
                     </tr>
                     {/* MACD */} 
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">MACD</td>
-                      <td className={`py-3 px-4 text-right`}>{typeof indicators.macd === 'number' ? indicators.macd.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">MACD</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {typeof indicators.macd === 'number' ? indicators.macd.toFixed(4) : 'N/A'}
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">MACD Signal</td>
-                      <td className={`py-3 px-4 text-right`}>{typeof indicators.macdSignal === 'number' ? indicators.macdSignal.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">MACD Signal</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {typeof indicators.macdSignal === 'number' ? indicators.macdSignal.toFixed(4) : 'N/A'}
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">MACD Histogram</td>
-                      <td className={`py-3 px-4 text-right`}>{typeof indicators.macdHistogram === 'number' ? indicators.macdHistogram.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">MACD Histogram</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {typeof indicators.macdHistogram === 'number' ? indicators.macdHistogram.toFixed(4) : 'N/A'}
+                        </span>
+                      </td>
                     </tr>
                     {/* 50-day MA */} 
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">50-Day MA</td>
-                      <td className={`py-3 px-4 text-right`}>{typeof indicators.sma50 === 'number' ? indicators.sma50.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">50-Day MA</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {typeof indicators.sma50 === 'number' ? indicators.sma50.toFixed(4) : 'N/A'}
+                        </span>
+                      </td>
                     </tr>
                     {/* 200-day MA */} 
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">200-Day MA</td>
-                      <td className={`py-3 px-4 text-right`}>{typeof indicators.sma200 === 'number' ? indicators.sma200.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">200-Day MA</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {typeof indicators.sma200 === 'number' ? indicators.sma200.toFixed(4) : 'N/A'}
+                        </span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
               {/* Market Data Table */}
-              <div className="w-full bg-white rounded-lg shadow overflow-hidden">
-                <h2 className="text-xl font-semibold mb-4 p-6">Market Data</h2>
+              <div className="w-full bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 overflow-hidden">
+                <div className="flex items-center justify-between p-6">
+                  <h2 className="text-xl font-semibold text-gray-200">Market Data</h2>
+                  <LiveIndicator />
+                </div>
                 <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                      <th className="py-3 px-4 text-right font-semibold">Value</th>
+                    <tr className="bg-zinc-800">
+                      <th className="py-3 px-4 text-left font-semibold text-gray-300">Metric</th>
+                      <th className="py-3 px-4 text-right font-semibold text-gray-300">Value</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">24h Volume</td>
-                      <td className={`py-3 px-4 text-right`}>${currentCoin?.volume24h?.toLocaleString() || '0'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">24h Volume</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          ${currentCoin?.volume24h?.toLocaleString() || '0'}
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">1h Change</td>
-                      <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange1h?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">1h Change</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {currentCoin?.percentChange1h?.toFixed(2) || 'N/A'}%
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">24h Change</td>
-                      <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange24h?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">24h Change</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {currentCoin?.percentChange24h?.toFixed(2) || 'N/A'}%
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">7d Change</td>
-                      <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange7d?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">7d Change</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {currentCoin?.percentChange7d?.toFixed(2) || 'N/A'}%
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">Market Cap</td>
-                      <td className={`py-3 px-4 text-right`}>${currentCoin?.marketCap?.toLocaleString() || '0'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">Market Cap</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          ${currentCoin?.marketCap?.toLocaleString() || '0'}
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="border-t border-gray-200">
-                      <td className="py-3 px-4 font-medium">CMC Rank</td>
-                      <td className={`py-3 px-4 text-right`}>{currentCoin?.cmcRank || 'N/A'} <LoadingDot /></td>
+                    <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-300">CMC Rank</td>
+                      <td className={`py-3 px-4 text-right`}>
+                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                          {currentCoin?.cmcRank || 'N/A'}
+                        </span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
               {/* Latest News - Mobile Only */}
-              <div className="w-full bg-white rounded-lg shadow p-6 md:hidden">
-                <h2 className="text-xl font-semibold mb-4">Latest News</h2>
+              <div className="w-full bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-6 md:hidden">
+                <h2 className="text-xl font-semibold mb-4 text-gray-200">Latest News</h2>
                 <ul className="space-y-3">
                   {newsLoading ? (
-                    <li><div className="text-gray-500">Loading news... <LoadingDot /></div></li>
+                    <li><div className="text-gray-400">Loading news... <LoadingDot /></div></li>
                   ) : newsError ? (
-                    <li><div className="text-red-600">{newsError}</div></li>
+                    <li><div className="text-red-500">{newsError}</div></li>
                   ) : news.length > 0 ? (
                     <>
                       {(isMobile && !showAllNews ? news.slice(0, 1) : news).map((item: NewsItem, idx: number) => (
-                        <li key={idx} className="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-200">
-                          <a href={item.url} className="text-blue-600 block" target="_blank" rel="noopener noreferrer">
+                        <li key={idx} className="bg-zinc-800 p-3 rounded border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all duration-200">
+                          <a href={item.url} className="text-blue-400 hover:text-blue-300 block transition-colors" target="_blank" rel="noopener noreferrer">
                             {truncateText(item.title, 60)}
                           </a>
                         </li>
@@ -678,7 +742,7 @@ function App() {
                         <li className="mt-2">
                           <button
                             onClick={() => setShowAllNews(!showAllNews)}
-                            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                            className="w-full px-4 py-2 bg-zinc-800 text-gray-200 rounded-lg hover:bg-zinc-700 transition-colors duration-200 border border-zinc-700"
                           >
                             {showAllNews ? 'Show Less' : 'Show More'}
                           </button>
@@ -686,20 +750,20 @@ function App() {
                       )}
                     </>
                   ) : (
-                    <li><div className="text-gray-500">No news found for {selected}.</div></li>
+                    <li><div className="text-gray-400">No news found for {selected}.</div></li>
                   )}
                 </ul>
               </div>
             </div>
 
             {/* Sağ Kısım: AI Analysis Summary (uzun ve robot videosu ile) */}
-            <div className="lg:col-span-1 bg-white rounded-lg shadow p-6 flex flex-col justify-start items-center">
-              <h2 className="text-xl font-semibold mb-4 text-center">AI Analysis</h2>
+            <div className="lg:col-span-1 bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-6 flex flex-col justify-start items-center">
+              <h2 className="text-xl font-semibold mb-4 text-center text-gray-200">AI Analysis</h2>
               {/* Robot GIF/Animation */}
-              <div className="bg-white rounded-lg mb-4 flex items-center justify-center text-gray-500 overflow-hidden">
+              <div className="bg-zinc-800 rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-zinc-700">
                 <img src="/Anima-Bot.gif" alt="AI Robot Animation" className="w-full h-full object-contain" />
               </div>
-              <div className="rounded-lg shadow p-6 text-lg font-semibold text-white w-full text-center bg-gradient-to-r from-blue-500 to-indigo-600">
+              <div className="rounded-lg shadow-lg p-6 text-lg font-semibold text-white w-full text-center bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 leading-relaxed">
                 {displayedAiSummary} {/* displayedAiSummary kullanılıyor */}
               </div>
             </div>
