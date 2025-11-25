@@ -72,7 +72,8 @@ function App() {
   const [news, setNews] = useState<NewsItem[]>([]); // New state for news
   const [newsLoading, setNewsLoading] = useState<boolean>(false); // New state for news loading
   const [newsError, setNewsError] = useState<string | null>(null); // New state for news error
-  const [displayedAiSummary, setDisplayedAiSummary] = useState<string>(''); // New state for typewriter effect
+  const [displayedAiSummary, setDisplayedAiSummary] = useState<string>(''); // Displayed text for typewriter effect
+  const [visibleCharacters, setVisibleCharacters] = useState<number>(0); // Number of characters currently visible
 
   // Helper function to strip markdown from text
   const stripMarkdown = (text: string): string => {
@@ -86,27 +87,47 @@ function App() {
   useEffect(() => {
     if (!aiSummary) {
       setDisplayedAiSummary('');
+      setVisibleCharacters(0);
       return;
     }
 
     const plainAiSummary = stripMarkdown(aiSummary);
+    setVisibleCharacters(0); // Her yeni özet geldiğinde karakter sayısını sıfırla
 
-    let i = 0;
-    setDisplayedAiSummary(''); // Clear previous text before starting new animation
     const typingSpeed = 30; // Milliseconds per character
+    let intervalId: NodeJS.Timeout;
 
-    const typeCharacter = () => {
-      if (i < plainAiSummary.length) {
-        setDisplayedAiSummary(prev => prev + plainAiSummary.charAt(i));
-        i++;
-        setTimeout(typeCharacter, typingSpeed);
-      }
+    intervalId = setInterval(() => {
+      setVisibleCharacters(prevCount => {
+        if (prevCount < plainAiSummary.length) {
+          return prevCount + 1;
+        } else {
+          clearInterval(intervalId);
+          return prevCount; // Son karaktere ulaşıldıysa mevcut sayıyı koru
+        }
+      });
+    }, typingSpeed);
+
+    // Cleanup fonksiyonu
+    return () => clearInterval(intervalId);
+  }, [aiSummary]); // Yalnızca aiSummary değiştiğinde bu efekti yeniden çalıştır
+
+  // visibleCharacters veya plainAiSummary değiştiğinde displayedAiSummary'i güncelle
+  useEffect(() => {
+    if (aiSummary) {
+      const plainAiSummary = stripMarkdown(aiSummary);
+      setDisplayedAiSummary(plainAiSummary.slice(0, visibleCharacters));
+    }
+  }, [visibleCharacters, aiSummary]);
+
+
+  useEffect(() => {
+    const handleResize = () => {
+      // This effect handles resize logic for isMobile
+      // No direct changes needed here for the current problem
     };
-
-    const timeoutId = setTimeout(typeCharacter, typingSpeed); // Start typing after a small delay
-
-    return () => clearTimeout(timeoutId); // Cleanup on unmount or aiSummary change
-  }, [aiSummary]); // Re-run effect when aiSummary changes
+    // For now, let's assume it was removed during rollback and re-add if needed.
+  }, []);
 
   useEffect(() => {
     const fetchCoins = async () => {
@@ -270,6 +291,7 @@ function App() {
           }
 
           const aiAnalysisJson = await aiAnalysisResponse.json();
+          // console.log("Raw AI Analysis JSON:", aiAnalysisJson); // Hata ayıklama için kaldırıldı
           setAiSummary(aiAnalysisJson.analysis);
 
           try {
@@ -639,7 +661,7 @@ function App() {
                 <img src="/Anima-Bot.gif" alt="AI Robot Animation" className="w-full h-full object-contain" />
               </div>
               <div className="rounded-lg shadow p-6 text-lg font-semibold text-white w-full text-center bg-gradient-to-r from-blue-500 to-indigo-600">
-                {displayedAiSummary}
+                {displayedAiSummary} {/* displayedAiSummary kullanılıyor */}
               </div>
             </div>
           </div>
