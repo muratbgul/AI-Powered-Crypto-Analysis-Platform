@@ -445,7 +445,7 @@ function App() {
       {/* Main Content */}
       <div className="flex flex-1 flex-col md:flex-row w-full">
         {/* Left: News & Selector */}
-        <aside className="md:w-1/4 w-full bg-white p-6 border-r border-gray-200">
+        <aside className="md:w-1/5 w-full bg-white p-6 border-r border-gray-200 shadow-md rounded-lg">
           <div className="mb-6">
             <label htmlFor="coin-select" className="block text-sm font-medium text-gray-700 mb-2">Select Coin</label>
             <select
@@ -491,112 +491,121 @@ function App() {
         </aside>
 
         {/* Center: Chart and Indicators Table */}
-        <main className="flex-1 flex flex-col items-center justify-start p-6">
-          {/* Price Chart */}
-          <div className="w-full max-w-2xl bg-white rounded-lg shadow p-6 mb-8 flex flex-col items-center">
-            <h2 className="text-xl font-semibold mb-4">{selected}/USDT Price Chart</h2>
-            {chartLoading ? (
-              <div className="w-full h-64 flex items-center justify-center text-gray-500">Loading chart...</div>
-            ) : chartError ? (
-              <div className="w-full h-64 flex items-center justify-center text-red-600">Chart Error: {chartError}</div>
-            ) : chartData ? (
-              <div className="w-full h-64">
-                <Line data={chartData} options={{ maintainAspectRatio: false }} />
+        <main className="flex-1 flex flex-col justify-start p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+            {/* Sol Kısım: Chart, Indicators ve Market Data */} 
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              {/* Price Chart */}
+              <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center">
+                <h2 className="text-xl font-semibold mb-4">{selected}/USDT Price Chart</h2>
+                {chartLoading ? (
+                  <div className="w-full h-64 flex items-center justify-center text-gray-500">Loading chart...</div>
+                ) : chartError ? (
+                  <div className="w-full h-64 flex items-center justify-center text-red-600">Chart Error: {chartError}</div>
+                ) : chartData ? (
+                  <div className="w-full h-64">
+                    <Line data={chartData} options={{ maintainAspectRatio: false }} />
+                  </div>
+                ) : (
+                  <div className="w-full h-64 bg-gray-200 rounded flex items-center justify-center text-gray-500">
+                    Chart data not found.
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="w-full h-64 bg-gray-200 rounded flex items-center justify-center text-gray-500">
-                Chart data not found.
+
+              {/* Indicators Table */}
+              <div className="w-full bg-white rounded-lg shadow overflow-hidden">
+                <h2 className="text-xl font-semibold mb-4 p-6">Technical Indicators</h2>
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="py-3 px-4 text-left font-semibold">Indicator</th>
+                      <th className="py-3 px-4 text-right font-semibold">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* RSI */} 
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">RSI (14)</td>
+                      <td className={`py-3 px-4 text-right`}>{typeof indicators.rsi === 'number' ? indicators.rsi.toFixed(2) : 'N/A'} <LoadingDot /></td>
+                    </tr>
+                    {/* MACD */} 
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">MACD</td>
+                      <td className={`py-3 px-4 text-right`}>{typeof indicators.macd === 'number' ? indicators.macd.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">MACD Signal</td>
+                      <td className={`py-3 px-4 text-right`}>{typeof indicators.macdSignal === 'number' ? indicators.macdSignal.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">MACD Histogram</td>
+                      <td className={`py-3 px-4 text-right`}>{typeof indicators.macdHistogram === 'number' ? indicators.macdHistogram.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    </tr>
+                    {/* 50-day MA */} 
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">50-Day MA</td>
+                      <td className={`py-3 px-4 text-right`}>{typeof indicators.sma50 === 'number' ? indicators.sma50.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    </tr>
+                    {/* 200-day MA */} 
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">200-Day MA</td>
+                      <td className={`py-3 px-4 text-right`}>{typeof indicators.sma200 === 'number' ? indicators.sma200.toFixed(4) : 'N/A'} <LoadingDot /></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
 
-          {/* Indicators Table */}
-          <div className="w-full max-w-2xl mb-8">
-            <h2 className="text-xl font-semibold mb-4">Technical Indicators</h2>
-            <table className="min-w-full bg-white rounded-lg shadow overflow-hidden">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-3 px-4 text-left font-semibold">Indicator</th>
-                  <th className="py-3 px-4 text-right font-semibold">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* RSI */} 
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">RSI (14)</td>
-                  <td className={`py-3 px-4 text-right`}>{typeof indicators.rsi === 'number' ? indicators.rsi.toFixed(2) : 'N/A'} <LoadingDot /></td>
-                </tr>
-                {/* MACD */} 
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">MACD</td>
-                  <td className={`py-3 px-4 text-right`}>{typeof indicators.macd === 'number' ? indicators.macd.toFixed(4) : 'N/A'} <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">MACD Signal</td>
-                  <td className={`py-3 px-4 text-right`}>{typeof indicators.macdSignal === 'number' ? indicators.macdSignal.toFixed(4) : 'N/A'} <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">MACD Histogram</td>
-                  <td className={`py-3 px-4 text-right`}>{typeof indicators.macdHistogram === 'number' ? indicators.macdHistogram.toFixed(4) : 'N/A'} <LoadingDot /></td>
-                </tr>
-                {/* 50-day MA */} 
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">50-Day MA</td>
-                  <td className={`py-3 px-4 text-right`}>{typeof indicators.sma50 === 'number' ? indicators.sma50.toFixed(4) : 'N/A'} <LoadingDot /></td>
-                </tr>
-                {/* 200-day MA */} 
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">200-Day MA</td>
-                  <td className={`py-3 px-4 text-right`}>{typeof indicators.sma200 === 'number' ? indicators.sma200.toFixed(4) : 'N/A'} <LoadingDot /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              {/* Market Data Table */}
+              <div className="w-full bg-white rounded-lg shadow overflow-hidden">
+                <h2 className="text-xl font-semibold mb-4 p-6">Market Data</h2>
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="py-3 px-4 text-left font-semibold">Metric</th>
+                      <th className="py-3 px-4 text-right font-semibold">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">24h Volume</td>
+                      <td className={`py-3 px-4 text-right`}>${currentCoin?.volume24h?.toLocaleString() || '0'} <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">1h Change</td>
+                      <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange1h?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">24h Change</td>
+                      <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange24h?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">7d Change</td>
+                      <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange7d?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">Market Cap</td>
+                      <td className={`py-3 px-4 text-right`}>${currentCoin?.marketCap?.toLocaleString() || '0'} <LoadingDot /></td>
+                    </tr>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-3 px-4 font-medium">CMC Rank</td>
+                      <td className={`py-3 px-4 text-right`}>{currentCoin?.cmcRank || 'N/A'} <LoadingDot /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-          {/* Market Data Table */}
-          <div className="w-full max-w-2xl mb-8">
-            <h2 className="text-xl font-semibold mb-4">Market Data</h2>
-            <table className="min-w-full bg-white rounded-lg shadow overflow-hidden">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                  <th className="py-3 px-4 text-right font-semibold">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">24h Volume</td>
-                  <td className={`py-3 px-4 text-right`}>${currentCoin?.volume24h?.toLocaleString() || '0'} <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">1h Change</td>
-                  <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange1h?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">24h Change</td>
-                  <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange24h?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">7d Change</td>
-                  <td className={`py-3 px-4 text-right ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>{currentCoin?.percentChange7d?.toFixed(2) || 'N/A'}% <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">Market Cap</td>
-                  <td className={`py-3 px-4 text-right`}>${currentCoin?.marketCap?.toLocaleString() || '0'} <LoadingDot /></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td className="py-3 px-4 font-medium">CMC Rank</td>
-                  <td className={`py-3 px-4 text-right`}>{currentCoin?.cmcRank || 'N/A'} <LoadingDot /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* AI Analysis Summary */}
-          <h2 className="text-xl font-semibold mb-4 w-full max-w-2xl">AI Analysis Summary</h2>
-          <div className="w-full max-w-2xl flex justify-center">
-            <div className="rounded-lg shadow p-6 text-lg font-semibold text-white w-full text-center bg-gradient-to-r from-blue-500 to-indigo-600">
-              {aiSummary}
+            {/* Sağ Kısım: AI Analysis Summary (uzun ve robot videosu ile) */}
+            <div className="lg:col-span-1 bg-white rounded-lg shadow p-6 flex flex-col justify-start items-center">
+              <h2 className="text-xl font-semibold mb-4 text-center">AI Analysis Summary</h2>
+              {/* Robot Video/Animation Placeholder */}
+              <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center text-gray-500">
+                [Robot Video/Animation Placeholder]
+              </div>
+              <div className="rounded-lg shadow p-6 text-lg font-semibold text-white w-full text-center bg-gradient-to-r from-blue-500 to-indigo-600">
+                {aiSummary}
+              </div>
             </div>
           </div>
         </main>
