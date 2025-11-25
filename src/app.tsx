@@ -72,6 +72,41 @@ function App() {
   const [news, setNews] = useState<NewsItem[]>([]); // New state for news
   const [newsLoading, setNewsLoading] = useState<boolean>(false); // New state for news loading
   const [newsError, setNewsError] = useState<string | null>(null); // New state for news error
+  const [displayedAiSummary, setDisplayedAiSummary] = useState<string>(''); // New state for typewriter effect
+
+  // Helper function to strip markdown from text
+  const stripMarkdown = (text: string): string => {
+    // Remove bold and italics markers (*, **, _)
+    let plainText = text.replace(/(\*\*|__)(.*?)\1/g, '$2'); // Bold
+    plainText = plainText.replace(/(\*|_)(.*?)\1/g, '$2');   // Italic
+    return plainText;
+  };
+
+  // Typewriter effect for AI Summary
+  useEffect(() => {
+    if (!aiSummary) {
+      setDisplayedAiSummary('');
+      return;
+    }
+
+    const plainAiSummary = stripMarkdown(aiSummary);
+
+    let i = 0;
+    setDisplayedAiSummary(''); // Clear previous text before starting new animation
+    const typingSpeed = 30; // Milliseconds per character
+
+    const typeCharacter = () => {
+      if (i < plainAiSummary.length) {
+        setDisplayedAiSummary(prev => prev + plainAiSummary.charAt(i));
+        i++;
+        setTimeout(typeCharacter, typingSpeed);
+      }
+    };
+
+    const timeoutId = setTimeout(typeCharacter, typingSpeed); // Start typing after a small delay
+
+    return () => clearTimeout(timeoutId); // Cleanup on unmount or aiSummary change
+  }, [aiSummary]); // Re-run effect when aiSummary changes
 
   useEffect(() => {
     const fetchCoins = async () => {
@@ -447,7 +482,7 @@ function App() {
         {/* Left: News & Selector */}
         <aside className="md:w-1/5 w-full bg-white p-6 border-r border-gray-200 shadow-md rounded-lg">
           <div className="mb-6">
-            <label htmlFor="coin-select" className="block text-sm font-medium text-gray-700 mb-2">Select Coin</label>
+            <label htmlFor="coin-select" className="text-lg font-semibold mb-4">Select Coin</label>
             <select
               id="coin-select"
               value={selected}
@@ -598,13 +633,13 @@ function App() {
 
             {/* Sağ Kısım: AI Analysis Summary (uzun ve robot videosu ile) */}
             <div className="lg:col-span-1 bg-white rounded-lg shadow p-6 flex flex-col justify-start items-center">
-              <h2 className="text-xl font-semibold mb-4 text-center">AI Analysis Summary</h2>
-              {/* Robot Video/Animation Placeholder */}
-              <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center text-gray-500">
-                [Robot Video/Animation Placeholder]
+              <h2 className="text-xl font-semibold mb-4 text-center">AI Analysis</h2>
+              {/* Robot GIF/Animation */}
+              <div className="bg-white rounded-lg mb-4 flex items-center justify-center text-gray-500 overflow-hidden">
+                <img src="/Anima-Bot.gif" alt="AI Robot Animation" className="w-full h-full object-contain" />
               </div>
               <div className="rounded-lg shadow p-6 text-lg font-semibold text-white w-full text-center bg-gradient-to-r from-blue-500 to-indigo-600">
-                {aiSummary}
+                {displayedAiSummary}
               </div>
             </div>
           </div>
