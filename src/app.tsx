@@ -291,6 +291,13 @@ function App() {
     </span>
   );
 
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength) + '...';
+  };
+
   // Dummy data for news and AI summary - will be replaced with live data later
   const dummyData: { [key: string]: any } = {
     BTC: {
@@ -471,9 +478,9 @@ function App() {
               <li><div className="text-red-600">{newsError}</div></li>
             ) : news.length > 0 ? (
               news.map((item: NewsItem, idx: number) => (
-                <li key={idx}>
-                  <a href={item.url} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                    {item.title}
+                <li key={idx} className="bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200 hover:border-primary hover:shadow-lg transition-all duration-200">
+                  <a href={item.url} className="text-blue-600 block" target="_blank" rel="noopener noreferrer">
+                    {truncateText(item.title, 60)}
                   </a>
                 </li>
               ))
