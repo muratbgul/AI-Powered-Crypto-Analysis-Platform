@@ -12,6 +12,135 @@ import {
 } from 'chart.js';
 import { RSI, MACD, SMA } from 'technicalindicators';
 
+type Language = 'en' | 'tr';
+
+const uiText = {
+  headerTitle: {
+    en: 'AI Powered Crypto Analysis Platform',
+    tr: 'Yapay Zeka Destekli Kripto Analiz Platformu',
+  },
+  selectCoin: {
+    en: 'Select Coin',
+    tr: 'Coin Seç',
+  },
+  latestNews: {
+    en: 'Latest News',
+    tr: 'Son Haberler',
+  },
+  loadingNews: {
+    en: 'Loading news...',
+    tr: 'Haberler yükleniyor...',
+  },
+  newsError: {
+    en: 'News error',
+    tr: 'Haber hatası',
+  },
+  noNews: {
+    en: 'No news found for',
+    tr: 'İçin haber bulunamadı',
+  },
+  showMore: {
+    en: 'Show More',
+    tr: 'Daha Fazla Göster',
+  },
+  showLess: {
+    en: 'Show Less',
+    tr: 'Daha Az Göster',
+  },
+  priceChart: {
+    en: 'Price Chart',
+    tr: 'Fiyat Grafiği',
+  },
+  chartLoading: {
+    en: 'Loading chart...',
+    tr: 'Grafik yükleniyor...',
+  },
+  chartError: {
+    en: 'Chart Error',
+    tr: 'Grafik Hatası',
+  },
+  chartEmpty: {
+    en: 'Chart data not found.',
+    tr: 'Grafik verisi bulunamadı.',
+  },
+  technicalIndicators: {
+    en: 'Technical Indicators',
+    tr: 'Teknik İndikatörler',
+  },
+  indicatorColumn: {
+    en: 'Indicator',
+    tr: 'İndikatör',
+  },
+  valueColumn: {
+    en: 'Value',
+    tr: 'Değer',
+  },
+  marketData: {
+    en: 'Market Data',
+    tr: 'Piyasa Verileri',
+  },
+  metricVolume: {
+    en: '24h Volume',
+    tr: '24s Hacim',
+  },
+  metric1hChange: {
+    en: '1h Change',
+    tr: '1s Değişim',
+  },
+  metric24hChange: {
+    en: '24h Change',
+    tr: '24s Değişim',
+  },
+  metric7dChange: {
+    en: '7d Change',
+    tr: '7g Değişim',
+  },
+  metricMarketCap: {
+    en: 'Market Cap',
+    tr: 'Piyasa Değeri',
+  },
+  metricRank: {
+    en: 'CMC Rank',
+    tr: 'CMC Sırası',
+  },
+  aiAnalysisTitle: {
+    en: 'AI Analysis',
+    tr: 'Yapay Zeka Analizi',
+  },
+  liveLabel: {
+    en: 'LIVE',
+    tr: 'CANLI',
+  },
+  aiSummaryPlaceholder: {
+    en: 'AI analysis loading...',
+    tr: 'Yapay zeka analizi yükleniyor...',
+  },
+};
+
+const translateText = async (text: string, targetLang: Language): Promise<string> => {
+  if (!text || targetLang === 'en') {
+    return text;
+  }
+  try {
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(
+        text
+      )}`
+    );
+    if (!response.ok) {
+      throw new Error('Translation request failed');
+    }
+    const data = await response.json();
+    const translated = data[0]
+      .map((segment: any[]) => segment[0])
+      .join('');
+    return translated;
+  } catch (error) {
+    console.error('Translation failed:', error);
+    return text;
+  }
+};
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -61,6 +190,7 @@ interface ChartData {
 
 function App() {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const [language, setLanguage] = useState<Language>('en');
   const [coins, setCoins] = useState<CoinData[]>([]);
   const [selected, setSelected] = useState<string>('BTC');
   const [chartData, setChartData] = useState<ChartData | null>(null);
@@ -69,7 +199,8 @@ function App() {
   const [indicators, setIndicators] = useState<any>({});
   const [loadingInitialData, setLoadingInitialData] = useState<boolean>(true);
   const [initialDataError, setInitialDataError] = useState<string | null>(null);
-  const [aiSummary, setAiSummary] = useState<string>('AI analysis loading...'); // New state for AI summary
+  const [aiSummary, setAiSummary] = useState<string>(uiText.aiSummaryPlaceholder.en); // Raw AI summary text
+  const [translatedAiSummary, setTranslatedAiSummary] = useState<string>(uiText.aiSummaryPlaceholder.en);
   const [news, setNews] = useState<NewsItem[]>([]); // New state for news
   const [newsLoading, setNewsLoading] = useState<boolean>(false); // New state for news loading
   const [newsError, setNewsError] = useState<string | null>(null); // New state for news error
@@ -77,6 +208,7 @@ function App() {
   const [visibleCharacters, setVisibleCharacters] = useState<number>(0); // Number of characters currently visible
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768); // Detect mobile screen size
   const [showAllNews, setShowAllNews] = useState<boolean>(false); // State for showing all news on mobile
+  const [translatedNews, setTranslatedNews] = useState<NewsItem[]>([]);
 
   // Helper function to strip markdown from text
   const stripMarkdown = (text: string): string => {
@@ -86,15 +218,74 @@ function App() {
     return plainText;
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    const currentLanguage = language;
+    const runTranslation = async () => {
+      if (!aiSummary) {
+        setTranslatedAiSummary('');
+        return;
+      }
+      if (language === 'en') {
+        setTranslatedAiSummary(aiSummary);
+        return;
+      }
+      const translated = await translateText(aiSummary, language);
+      if (isMounted && currentLanguage === language) {
+        setTranslatedAiSummary(translated);
+      }
+    };
+    runTranslation();
+    return () => {
+      isMounted = false;
+    };
+  }, [aiSummary, language]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const currentLanguage = language;
+    const translateNewsItems = async () => {
+      if (news.length === 0) {
+        setTranslatedNews([]);
+        return;
+      }
+      setTranslatedNews(news);
+      if (language === 'en') {
+        return;
+      }
+      try {
+        const translatedTitles = await Promise.all(
+          news.map((item) => translateText(item.title, language))
+        );
+        if (isMounted && currentLanguage === language) {
+          const updated = news.map((item, idx) => ({
+            ...item,
+            title: translatedTitles[idx],
+          }));
+          setTranslatedNews(updated);
+        }
+      } catch (error) {
+        console.error('News translation failed:', error);
+        if (isMounted && currentLanguage === language) {
+          setTranslatedNews(news);
+        }
+      }
+    };
+    translateNewsItems();
+    return () => {
+      isMounted = false;
+    };
+  }, [news, language]);
+
   // Typewriter effect for AI Summary
   useEffect(() => {
-    if (!aiSummary) {
+    if (!translatedAiSummary) {
       setDisplayedAiSummary('');
       setVisibleCharacters(0);
       return;
     }
 
-    const plainAiSummary = stripMarkdown(aiSummary);
+    const plainAiSummary = stripMarkdown(translatedAiSummary);
     setVisibleCharacters(0); // Her yeni özet geldiğinde karakter sayısını sıfırla
 
     const typingSpeed = 30; // Milliseconds per character
@@ -113,15 +304,15 @@ function App() {
 
     // Cleanup fonksiyonu
     return () => clearInterval(intervalId);
-  }, [aiSummary]); // Yalnızca aiSummary değiştiğinde bu efekti yeniden çalıştır
+  }, [translatedAiSummary]); // Yalnızca çeviri değiştiğinde efekti yeniden çalıştır
 
   // visibleCharacters veya plainAiSummary değiştiğinde displayedAiSummary'i güncelle
   useEffect(() => {
-    if (aiSummary) {
-      const plainAiSummary = stripMarkdown(aiSummary);
+    if (translatedAiSummary) {
+      const plainAiSummary = stripMarkdown(translatedAiSummary);
       setDisplayedAiSummary(plainAiSummary.slice(0, visibleCharacters));
     }
-  }, [visibleCharacters, aiSummary]);
+  }, [visibleCharacters, translatedAiSummary]);
 
 
   useEffect(() => {
@@ -312,7 +503,7 @@ function App() {
               setNews(newsJson.news);
           } catch (newsFetchError: any) {
               console.error("Tavily news fetch failed:", newsFetchError);
-              setNewsError(`News error: ${newsFetchError.message}`);
+              setNewsError(newsFetchError.message);
               setNews([]);
           }
 
@@ -329,7 +520,7 @@ function App() {
         setChartError(e.message);
         setIndicators({});
         setAiSummary(`AI analysis error: ${e.message}`);
-        setNewsError(`News error: ${e.message}`);
+        setNewsError(e.message);
         setNews([]); // Hata durumunda haberleri temizle
       } finally {
         setChartLoading(false);
@@ -354,10 +545,10 @@ function App() {
   );
 
   // Canlı veri göstergesi
-  const LiveIndicator = () => (
+  const LiveIndicator = ({ label }: { label: string }) => (
     <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
       <span className="w-1.5 h-1.5 mr-1 bg-red-500 rounded-full animate-pulse"></span>
-      LIVE
+      {label}
     </span>
   );
 
@@ -504,12 +695,32 @@ function App() {
   }
 
   const currentCoin = coins.find((c) => c.symbol === selected);
+  const newsToRender =
+    language === 'en' ? news : (translatedNews.length ? translatedNews : news);
 
   return (
     <div className="min-h-screen bg-zinc-950 w-full flex flex-col">
       {/* Header */}
-      <header className="flex items-center bg-zinc-900 text-white p-4 shadow-lg border-b border-zinc-800">
-        <span className="text-3xl font-bold tracking-wide text-gray-100">AI Powered Crypto Analysis Platform</span>
+      <header className="flex items-center justify-between bg-zinc-900 text-white p-4 shadow-lg border-b border-zinc-800">
+        <span className="text-3xl font-bold tracking-wide text-gray-100">
+          {uiText.headerTitle[language]}
+        </span>
+        <div className="flex items-center gap-2">
+          {(['en', 'tr'] as Language[]).map((langOption) => (
+            <button
+              key={langOption}
+              onClick={() => setLanguage(langOption)}
+              className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors border ${
+                language === langOption
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-zinc-800 border-zinc-700 text-gray-300 hover:bg-zinc-700'
+              }`}
+              aria-pressed={language === langOption}
+            >
+              {langOption.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -517,7 +728,9 @@ function App() {
         {/* Left: News & Selector */}
         <aside className="md:w-1/5 w-full bg-zinc-900 p-6 border-r border-zinc-800 shadow-lg">
           <div className="mb-6">
-            <label htmlFor="coin-select" className="text-lg font-semibold mb-4 text-gray-200">Select Coin</label>
+            <label htmlFor="coin-select" className="text-lg font-semibold mb-4 text-gray-200">
+              {uiText.selectCoin[language]}
+            </label>
             <select
               id="coin-select"
               value={selected}
@@ -540,15 +753,25 @@ function App() {
               <LoadingDot/>{/* Artık sadece yüklenirken değil, sürekli görünür. */}
             </span>}
           </div>
-          <h2 className="text-lg font-semibold mb-4 hidden md:block text-gray-200">Latest News</h2>
+          <h2 className="text-lg font-semibold mb-4 hidden md:block text-gray-200">
+            {uiText.latestNews[language]}
+          </h2>
           <ul className="space-y-3 hidden md:block">
             {newsLoading ? (
-              <li><div className="text-gray-400">Loading news... <LoadingDot /></div></li>
+              <li>
+                <div className="text-gray-400">
+                  {uiText.loadingNews[language]} <LoadingDot />
+                </div>
+              </li>
             ) : newsError ? (
-              <li><div className="text-red-500">{newsError}</div></li>
-            ) : news.length > 0 ? (
+              <li>
+                <div className="text-red-500">
+                  {uiText.newsError[language]}: {newsError}
+                </div>
+              </li>
+            ) : newsToRender.length > 0 ? (
               <>
-                {news.map((item: NewsItem, idx: number) => (
+                {newsToRender.map((item: NewsItem, idx: number) => (
                   <li key={idx} className="bg-zinc-800 p-3 rounded border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all duration-200">
                     <a href={item.url} className="text-blue-400 hover:text-blue-300 block transition-colors" target="_blank" rel="noopener noreferrer">
                       {truncateText(item.title, 60)}
@@ -557,7 +780,13 @@ function App() {
                 ))}
               </>
             ) : (
-              <li><div className="text-gray-400">No news found for {selected}.</div></li>
+              <li>
+                <div className="text-gray-400">
+                  {language === 'en'
+                    ? `${uiText.noNews.en} ${selected}.`
+                    : `${selected} ${uiText.noNews.tr}.`}
+                </div>
+              </li>
             )}
           </ul>
         </aside>
@@ -569,18 +798,26 @@ function App() {
             <div className="lg:col-span-2 flex flex-col gap-6">
               {/* Price Chart */}
               <div className="bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-6 flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-4 text-gray-200">{selected}/USDT Price Chart</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-200">
+                  {language === 'en'
+                    ? `${selected}/USDT ${uiText.priceChart.en}`
+                    : `${selected}/USDT ${uiText.priceChart.tr}`}
+                </h2>
                 {chartLoading ? (
-                  <div className="w-full h-64 flex items-center justify-center text-gray-400">Loading chart...</div>
+                  <div className="w-full h-64 flex items-center justify-center text-gray-400">
+                    {uiText.chartLoading[language]}
+                  </div>
                 ) : chartError ? (
-                  <div className="w-full h-64 flex items-center justify-center text-red-500">Chart Error: {chartError}</div>
+                  <div className="w-full h-64 flex items-center justify-center text-red-500">
+                    {uiText.chartError[language]}: {chartError}
+                  </div>
                 ) : chartData ? (
                   <div className="w-full h-64">
                     <Line data={chartData} options={{ maintainAspectRatio: false }} />
                   </div>
                 ) : (
                   <div className="w-full h-64 bg-zinc-800 rounded flex items-center justify-center text-gray-400">
-                    Chart data not found.
+                    {uiText.chartEmpty[language]}
                   </div>
                 )}
               </div>
@@ -588,14 +825,20 @@ function App() {
               {/* Indicators Table */}
               <div className="w-full bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 overflow-hidden">
                 <div className="flex items-center justify-between p-6">
-                  <h2 className="text-xl font-semibold text-gray-200">Technical Indicators</h2>
-                  <LiveIndicator />
+                  <h2 className="text-xl font-semibold text-gray-200">
+                    {uiText.technicalIndicators[language]}
+                  </h2>
+                  <LiveIndicator label={uiText.liveLabel[language]} />
                 </div>
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-zinc-800">
-                      <th className="py-3 px-4 text-left font-semibold text-gray-300">Indicator</th>
-                      <th className="py-3 px-4 text-right font-semibold text-gray-300">Value</th>
+                      <th className="py-3 px-4 text-left font-semibold text-gray-300">
+                        {uiText.indicatorColumn[language]}
+                      </th>
+                      <th className="py-3 px-4 text-right font-semibold text-gray-300">
+                        {uiText.valueColumn[language]}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -658,8 +901,10 @@ function App() {
               {/* Market Data Table */}
               <div className="w-full bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 overflow-hidden">
                 <div className="flex items-center justify-between p-6">
-                  <h2 className="text-xl font-semibold text-gray-200">Market Data</h2>
-                  <LiveIndicator />
+                  <h2 className="text-xl font-semibold text-gray-200">
+                    {uiText.marketData[language]}
+                  </h2>
+                  <LiveIndicator label={uiText.liveLabel[language]} />
                 </div>
                 <table className="min-w-full">
                   <thead>
@@ -670,7 +915,7 @@ function App() {
                   </thead>
                   <tbody>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-300">24h Volume</td>
+                      <td className="py-3 px-4 font-medium text-gray-300">{uiText.metricVolume[language]}</td>
                       <td className={`py-3 px-4 text-right`}>
                         <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
                           ${currentCoin?.volume24h?.toLocaleString() || '0'}
@@ -678,7 +923,7 @@ function App() {
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-300">1h Change</td>
+                      <td className="py-3 px-4 font-medium text-gray-300">{uiText.metric1hChange[language]}</td>
                       <td className={`py-3 px-4 text-right`}>
                         <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {currentCoin?.percentChange1h?.toFixed(2) || 'N/A'}%
@@ -686,7 +931,7 @@ function App() {
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-300">24h Change</td>
+                      <td className="py-3 px-4 font-medium text-gray-300">{uiText.metric24hChange[language]}</td>
                       <td className={`py-3 px-4 text-right`}>
                         <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {currentCoin?.percentChange24h?.toFixed(2) || 'N/A'}%
@@ -694,7 +939,7 @@ function App() {
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-300">7d Change</td>
+                      <td className="py-3 px-4 font-medium text-gray-300">{uiText.metric7dChange[language]}</td>
                       <td className={`py-3 px-4 text-right`}>
                         <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {currentCoin?.percentChange7d?.toFixed(2) || 'N/A'}%
@@ -702,7 +947,7 @@ function App() {
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-300">Market Cap</td>
+                      <td className="py-3 px-4 font-medium text-gray-300">{uiText.metricMarketCap[language]}</td>
                       <td className={`py-3 px-4 text-right`}>
                         <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
                           ${currentCoin?.marketCap?.toLocaleString() || '0'}
@@ -710,7 +955,7 @@ function App() {
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-300">CMC Rank</td>
+                      <td className="py-3 px-4 font-medium text-gray-300">{uiText.metricRank[language]}</td>
                       <td className={`py-3 px-4 text-right`}>
                         <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
                           {currentCoin?.cmcRank || 'N/A'}
@@ -723,34 +968,50 @@ function App() {
 
               {/* Latest News - Mobile Only */}
               <div className="w-full bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-6 md:hidden">
-                <h2 className="text-xl font-semibold mb-4 text-gray-200">Latest News</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-200">
+                  {uiText.latestNews[language]}
+                </h2>
                 <ul className="space-y-3">
                   {newsLoading ? (
-                    <li><div className="text-gray-400">Loading news... <LoadingDot /></div></li>
+                    <li>
+                      <div className="text-gray-400">
+                        {uiText.loadingNews[language]} <LoadingDot />
+                      </div>
+                    </li>
                   ) : newsError ? (
-                    <li><div className="text-red-500">{newsError}</div></li>
-                  ) : news.length > 0 ? (
+                    <li>
+                      <div className="text-red-500">
+                        {uiText.newsError[language]}: {newsError}
+                      </div>
+                    </li>
+                  ) : newsToRender.length > 0 ? (
                     <>
-                      {(isMobile && !showAllNews ? news.slice(0, 1) : news).map((item: NewsItem, idx: number) => (
+                      {(isMobile && !showAllNews ? newsToRender.slice(0, 1) : newsToRender).map((item: NewsItem, idx: number) => (
                         <li key={idx} className="bg-zinc-800 p-3 rounded border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all duration-200">
                           <a href={item.url} className="text-blue-400 hover:text-blue-300 block transition-colors" target="_blank" rel="noopener noreferrer">
                             {truncateText(item.title, 60)}
                           </a>
                         </li>
                       ))}
-                      {isMobile && news.length > 1 && (
+                      {isMobile && newsToRender.length > 1 && (
                         <li className="mt-2">
                           <button
                             onClick={() => setShowAllNews(!showAllNews)}
                             className="w-full px-4 py-2 bg-zinc-800 text-gray-200 rounded-lg hover:bg-zinc-700 transition-colors duration-200 border border-zinc-700"
                           >
-                            {showAllNews ? 'Show Less' : 'Show More'}
+                            {showAllNews ? uiText.showLess[language] : uiText.showMore[language]}
                           </button>
                         </li>
                       )}
                     </>
                   ) : (
-                    <li><div className="text-gray-400">No news found for {selected}.</div></li>
+                    <li>
+                      <div className="text-gray-400">
+                        {language === 'en'
+                          ? `${uiText.noNews.en} ${selected}.`
+                          : `${selected} ${uiText.noNews.tr}.`}
+                      </div>
+                    </li>
                   )}
                 </ul>
               </div>
@@ -758,7 +1019,9 @@ function App() {
 
             {/* Sağ Kısım: AI Analysis Summary (uzun ve robot videosu ile) */}
             <div className="lg:col-span-1 bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-6 flex flex-col justify-start items-center">
-              <h2 className="text-xl font-semibold mb-4 text-center text-gray-200">AI Analysis</h2>
+              <h2 className="text-xl font-semibold mb-4 text-center text-gray-200">
+                {uiText.aiAnalysisTitle[language]}
+              </h2>
               {/* Robot GIF/Animation */}
               <div className="bg-zinc-800 rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-zinc-700">
                 <img src="/Anima-Bot.gif" alt="AI Robot Animation" className="w-full h-full object-contain" />
