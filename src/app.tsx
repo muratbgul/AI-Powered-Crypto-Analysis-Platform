@@ -701,11 +701,27 @@ function App() {
   return (
     <div className="min-h-screen bg-zinc-950 w-full flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between bg-zinc-900 text-white p-4 shadow-lg border-b border-zinc-800">
-        <span className="text-3xl font-bold tracking-wide text-gray-100">
+      <header className="relative flex flex-col items-center bg-zinc-900 text-white p-4 shadow-lg border-b border-zinc-800 md:flex-row md:justify-center">
+        <span className="text-3xl font-bold tracking-wide text-gray-100 text-center">
           {uiText.headerTitle[language]}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3 md:hidden">
+          {(['en', 'tr'] as Language[]).map((langOption) => (
+            <button
+              key={langOption}
+              onClick={() => setLanguage(langOption)}
+              className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors border ${
+                language === langOption
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-zinc-800 border-zinc-700 text-gray-300 hover:bg-zinc-700'
+              }`}
+              aria-pressed={language === langOption}
+            >
+              {langOption.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="hidden md:flex items-center gap-2 absolute right-4 top-1/2 -translate-y-1/2">
           {(['en', 'tr'] as Language[]).map((langOption) => (
             <button
               key={langOption}
@@ -726,8 +742,8 @@ function App() {
       {/* Main Content */}
       <div className="flex flex-1 flex-col md:flex-row w-full">
         {/* Left: News & Selector */}
-        <aside className="md:w-1/5 w-full bg-zinc-900 p-6 border-r border-zinc-800 shadow-lg">
-          <div className="mb-6">
+        <aside className="hidden md:block md:w-1/5 bg-zinc-900 p-6 border-r border-zinc-800 shadow-lg">
+          <div className="mb-6 hidden md:block">
             <label htmlFor="coin-select" className="text-lg font-semibold mb-4 text-gray-200">
               {uiText.selectCoin[language]}
             </label>
@@ -742,7 +758,7 @@ function App() {
               ))}
             </select>
           </div>
-          <div className="mb-4">
+          <div className="mb-4 hidden md:block">
             {currentCoin && (
               <span className="text-lg font-bold flex items-center text-gray-200">
                 {currentCoin.name} ({currentCoin.symbol})
@@ -793,6 +809,39 @@ function App() {
 
         {/* Center: Chart and Indicators Table */}
         <main className="flex-1 flex flex-col justify-start p-6">
+          {/* Mobile Select Card */}
+          <div className="md:hidden mb-6">
+            <div className="bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 p-4">
+              <label htmlFor="coin-select-mobile" className="text-lg font-semibold mb-3 text-gray-200 block">
+                {uiText.selectCoin[language]}
+              </label>
+              <select
+                id="coin-select-mobile"
+                value={selected}
+                onChange={handleSelectChange}
+                className="w-full p-2 border border-zinc-700 rounded bg-zinc-800 text-gray-100 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/50 transition-all"
+              >
+                {coins.map((coin) => (
+                  <option key={coin.id} value={coin.symbol}>{coin.name} ({coin.symbol})</option>
+                ))}
+              </select>
+              {currentCoin && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-400 uppercase tracking-wide">Selected Coin</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-lg font-semibold text-gray-100">
+                      {currentCoin.name} ({currentCoin.symbol})
+                    </span>
+                    {currentCoin?.currentPrice && (
+                      <span className={`text-xl font-bold ${currentCoin.currentPrice > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        ${currentCoin.currentPrice.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
             {/* Sol Kısım: Chart, Indicators ve Market Data */} 
             <div className="lg:col-span-2 flex flex-col gap-6">
@@ -845,8 +894,8 @@ function App() {
                     {/* RSI */} 
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">RSI (14)</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {typeof indicators.rsi === 'number' ? indicators.rsi.toFixed(2) : 'N/A'}
                         </span>
                       </td>
@@ -854,24 +903,24 @@ function App() {
                     {/* MACD */} 
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">MACD</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {typeof indicators.macd === 'number' ? indicators.macd.toFixed(4) : 'N/A'}
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">MACD Signal</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {typeof indicators.macdSignal === 'number' ? indicators.macdSignal.toFixed(4) : 'N/A'}
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">MACD Histogram</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {typeof indicators.macdHistogram === 'number' ? indicators.macdHistogram.toFixed(4) : 'N/A'}
                         </span>
                       </td>
@@ -879,8 +928,8 @@ function App() {
                     {/* 50-day MA */} 
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">50-Day MA</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {typeof indicators.sma50 === 'number' ? indicators.sma50.toFixed(4) : 'N/A'}
                         </span>
                       </td>
@@ -888,8 +937,8 @@ function App() {
                     {/* 200-day MA */} 
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">200-Day MA</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {typeof indicators.sma200 === 'number' ? indicators.sma200.toFixed(4) : 'N/A'}
                         </span>
                       </td>
@@ -916,48 +965,48 @@ function App() {
                   <tbody>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">{uiText.metricVolume[language]}</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           ${currentCoin?.volume24h?.toLocaleString() || '0'}
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">{uiText.metric1hChange[language]}</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      <td className="py-3 px-4 text-right">
+                        <span className={`inline-flex items-center font-semibold ${currentCoin && (currentCoin.percentChange1h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {currentCoin?.percentChange1h?.toFixed(2) || 'N/A'}%
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">{uiText.metric24hChange[language]}</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      <td className="py-3 px-4 text-right">
+                        <span className={`inline-flex items-center font-semibold ${currentCoin && (currentCoin.percentChange24h || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {currentCoin?.percentChange24h?.toFixed(2) || 'N/A'}%
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">{uiText.metric7dChange[language]}</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className={`inline-flex items-center font-semibold animate-pulse ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      <td className="py-3 px-4 text-right">
+                        <span className={`inline-flex items-center font-semibold ${currentCoin && (currentCoin.percentChange7d || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {currentCoin?.percentChange7d?.toFixed(2) || 'N/A'}%
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">{uiText.metricMarketCap[language]}</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           ${currentCoin?.marketCap?.toLocaleString() || '0'}
                         </span>
                       </td>
                     </tr>
                     <tr className="border-t border-zinc-800 hover:bg-zinc-800/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-gray-300">{uiText.metricRank[language]}</td>
-                      <td className={`py-3 px-4 text-right`}>
-                        <span className="inline-flex items-center text-blue-400 font-semibold animate-pulse">
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center text-blue-400 font-semibold">
                           {currentCoin?.cmcRank || 'N/A'}
                         </span>
                       </td>
