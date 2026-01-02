@@ -209,6 +209,9 @@ function App() {
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768); // Detect mobile screen size
   const [showAllNews, setShowAllNews] = useState<boolean>(false); // State for showing all news on mobile
   const [translatedNews, setTranslatedNews] = useState<NewsItem[]>([]);
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [previousPrice, setPreviousPrice] = useState<number | null>(null);
+  const [priceChangeAnimation, setPriceChangeAnimation] = useState<'increase' | 'decrease' | null>(null);
 
   // Helper function to strip markdown from text
   const stripMarkdown = (text: string): string => {
@@ -532,6 +535,88 @@ function App() {
     }
   }, [selected, coins]); // coins'i bağımlılık dizisine ekledim
 
+  useEffect(() => {
+    if (!selected) {
+      return;
+    }
+
+    // Reset livePrice when coin changes
+    setLivePrice(null);
+    setPreviousPrice(null);
+    setPriceChangeAnimation(null);
+
+    const coinForWs = coins.find((c) => c.symbol === selected);
+    if (!coinForWs) {
+      return;
+    }
+
+    const wsUrl = BACKEND_URL.replace(/^http/, 'ws');
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      console.log('WebSocket connected, subscribing to:', selected);
+      socket.send(
+        JSON.stringify({
+          type: 'subscribe',
+          symbol: selected,
+          basePrice: coinForWs.currentPrice,
+        })
+      );
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('WebSocket message received:', message); // Debug log
+        if (
+          message.type === 'price' &&
+          message.symbol === selected &&
+          typeof message.price === 'number'
+        ) {
+          const newPrice = message.price;
+          
+          // Only compare if we have a previous price
+          if (previousPrice !== null && newPrice !== previousPrice) {
+            console.log(`Price update: ${previousPrice} -> ${newPrice}`); // Debug log
+            
+            // Determine if price increased or decreased
+            if (newPrice > previousPrice) {
+              setPriceChangeAnimation('increase');
+              console.log('Price increased');
+            } else if (newPrice < previousPrice) {
+              setPriceChangeAnimation('decrease');
+              console.log('Price decreased');
+            }
+            
+            // Reset animation after 2 seconds
+            setTimeout(() => {
+              setPriceChangeAnimation(null);
+            }, 2000);
+          } else if (previousPrice === null) {
+            console.log('First price received:', newPrice);
+          }
+          
+          setPreviousPrice(newPrice);
+          setLivePrice(newPrice);
+        }
+      } catch (err) {
+        console.error('Failed to parse WebSocket message', err);
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.error('WebSocket error', err);
+    };
+
+    socket.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [selected, BACKEND_URL, coins]);
+
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newSelected = event.target.value;
     console.log('Selected coin changed to:', newSelected); // Debug log
@@ -764,10 +849,18 @@ function App() {
                 {currentCoin.name} ({currentCoin.symbol})
               </span>
             )}
-            {currentCoin?.currentPrice && <span className={`ml-2 text-xl font-bold ${currentCoin.currentPrice > 0 ? 'text-green-500' : 'text-red-500'}`}>
-              ${currentCoin.currentPrice.toFixed(2)}
-              <LoadingDot/>{/* Artık sadece yüklenirken değil, sürekli görünür. */}
-            </span>}
+            {currentCoin?.currentPrice && (
+              <span className={`ml-2 text-xl font-bold transition-colors duration-500 ${
+                priceChangeAnimation === 'increase' 
+                  ? 'text-green-500' 
+                  : priceChangeAnimation === 'decrease' 
+                  ? 'text-red-500' 
+                  : 'text-white'
+              }`}>
+              ${(livePrice ?? currentCoin.currentPrice).toFixed(2)}
+              <LoadingDot/>
+            </span>
+            )}
           </div>
           <h2 className="text-lg font-semibold mb-4 hidden md:block text-gray-200">
             {uiText.latestNews[language]}
@@ -833,8 +926,14 @@ function App() {
                       {currentCoin.name} ({currentCoin.symbol})
                     </span>
                     {currentCoin?.currentPrice && (
-                      <span className={`text-xl font-bold ${currentCoin.currentPrice > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        ${currentCoin.currentPrice.toFixed(2)}
+                      <span className={`text-xl font-bold transition-colors duration-500 ${
+                        priceChangeAnimation === 'increase' 
+                          ? 'text-green-500' 
+                          : priceChangeAnimation === 'decrease' 
+                          ? 'text-red-500' 
+                          : 'text-white'
+                      }`}>
+                        ${(livePrice ?? currentCoin.currentPrice).toFixed(2)}
                       </span>
                     )}
                   </div>

@@ -1,4 +1,6 @@
 import express from 'express';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import 'dotenv/config';
@@ -18,10 +20,7 @@ app.get('/', (req, res) => {
   res.send('Hello World');
 });
 
-// 🚀 ASIL EKSİK OLAN KISIM BU:
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// 🚀 HTTP server and WebSocket server initialization are defined at the end of this file.
 
 // CoinMarketCap listings
 app.get('/api/cryptocurrency/listings/latest', async (req, res) => {
@@ -196,7 +195,10 @@ app.post('/api/ai/analyze-crypto', async (req, res) => {
 - 200-Day MA: ${sma200}
 - 24h Volume: ${volume}` +
       (news?.length > 0
-        ? `\n\nLatest News:\n` + news.map((item, index) => `${index + 1}. ${item.title}`).join('\n')
+        ? `
+
+Latest News:
+` + news.map((item, index) => `${index + 1}. ${item.title}`).join('\n')
         : '') +
       `\n\nProvide a concise market sentiment analysis and potential short-term outlook for ${symbol} in 2-3 sentences.`;
 
@@ -262,6 +264,83 @@ app.get('/api/news/tavily', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Proxy server running on port ${PORT}`);
+const server = createServer(app);
+
+const wss = new WebSocketServer({ server });
+
+wss.on('connection', (ws) => {
+  console.log('WebSocket client connected');
+
+  let selectedSymbol = null;
+  let intervalId;
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      if (data.type === 'subscribe' && data.symbol) {
+        selectedSymbol = data.symbol;
+        console.log(`Client subscribed to ${selectedSymbol}`);
+
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+
+        // Fetch real price from CoinMarketCap API every 10 seconds
+        const fetchRealPrice = async () => {
+          try {
+            const API_KEY = process.env.COINMARKETCAP_API_KEY;
+            if (!API_KEY || !selectedSymbol) return;
+
+            console.log(`Fetching real price for ${selectedSymbol}...`);
+            const cmcUrl = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${selectedSymbol}`;
+            const response = await fetch(cmcUrl, {
+              headers: { 'X-CMC_PRO_API_KEY': API_KEY },
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              const coinData = result.data[selectedSymbol];
+              if (coinData && coinData.quote && coinData.quote.USD) {
+                const realPrice = coinData.quote.USD.price;
+                // Add small random variation to simulate price changes (±0.1%)
+                const variation = (Math.random() - 0.5) * 0.002; // -0.1% to +0.1%
+                const simulatedPrice = realPrice * (1 + variation);
+                console.log(`Real price for ${selectedSymbol}: $${realPrice}, Simulated: $${simulatedPrice}`);
+                ws.send(
+                  JSON.stringify({
+                    type: 'price',
+                    symbol: selectedSymbol,
+                    price: Number(simulatedPrice.toFixed(2)),
+                    ts: Date.now(),
+                  })
+                );
+                console.log(`Price sent to client: $${simulatedPrice.toFixed(2)}`);
+              }
+            } else {
+              console.error(`CoinMarketCap API error: ${response.status}`);
+            }
+          } catch (err) {
+            console.error('Error fetching real price:', err);
+          }
+        };
+
+        // Fetch immediately, then every 10 seconds
+        fetchRealPrice();
+        intervalId = setInterval(fetchRealPrice, 10000);
+      }
+    } catch (err) {
+      console.error('Error handling WebSocket message:', err);
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('WebSocket client disconnected');
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`HTTP & WebSocket server running on port ${PORT}`);
 });
